@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import {
   Briefcase,
   Building2,
@@ -26,15 +26,29 @@ type UserSession = {
   role: 'customer' | 'fundi' | 'admin'
 }
 
-const defaultUser: UserSession = {
-  id: 1,
-  name: 'Jane Customer',
-  email: 'customer@fundiconnect.co.ke',
-  role: 'customer',
+const demoUsers: Record<UserSession['role'], UserSession> = {
+  customer: {
+    id: 1,
+    name: 'Jane Customer',
+    email: 'customer@fundiconnect.co.ke',
+    role: 'customer',
+  },
+  fundi: {
+    id: 2,
+    name: 'Mwangi Fundi',
+    email: 'fundi@fundiconnect.co.ke',
+    role: 'fundi',
+  },
+  admin: {
+    id: 3,
+    name: 'Platform Admin',
+    email: 'admin@fundiconnect.co.ke',
+    role: 'admin',
+  },
 }
 
 function App() {
-  const [session, setSession] = useState<UserSession | null>(defaultUser)
+  const [session, setSession] = useState<UserSession | null>(null)
   const [fundis, setFundis] = useState<FundiProfile[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -63,7 +77,7 @@ function App() {
 
   const handleLogin = async (payload: LoginRequest) => {
     const response = await loginUser(payload)
-    const nextUser = response.user as UserSession
+    const nextUser = (response.user as UserSession) ?? demoUsers[payload.role]
     setSession(nextUser)
     return nextUser
   }
@@ -88,6 +102,7 @@ function App() {
           <NavLink to="/dashboard">Dashboard</NavLink>
           <NavLink to="/bookings">Bookings</NavLink>
           <NavLink to="/wallet">Wallet</NavLink>
+          {session?.role === 'admin' ? <NavLink to="/admin">Admin</NavLink> : null}
         </nav>
 
         <div className="topbar-actions">
@@ -111,47 +126,12 @@ function App() {
 
       <main className="page-content">
         <Routes>
-          <Route
-            path="/"
-            element={
-              <HomePage
-                fundis={fundis}
-                loading={loading}
-                session={session}
-              />
-            }
-          />
+          <Route path="/" element={<HomePage fundis={fundis} loading={loading} session={session} />} />
           <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
-          <Route
-            path="/dashboard"
-            element={
-              session ? (
-                <DashboardPage session={session} />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          <Route
-            path="/bookings"
-            element={
-              session ? (
-                <BookingsPage session={session} />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          <Route
-            path="/wallet"
-            element={
-              session ? (
-                <WalletPage session={session} />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
+          <Route path="/dashboard" element={session ? <DashboardPage session={session} /> : <Navigate to="/login" replace />} />
+          <Route path="/bookings" element={session ? <BookingsPage session={session} /> : <Navigate to="/login" replace />} />
+          <Route path="/wallet" element={session ? <WalletPage session={session} /> : <Navigate to="/login" replace />} />
+          <Route path="/admin" element={session?.role === 'admin' ? <AdminPage session={session} /> : <Navigate to="/dashboard" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
@@ -185,12 +165,6 @@ function HomePage({
     )
   }, [fundis, searchTerm])
 
-  const recentJob = {
-    title: 'Emergency plumbing help',
-    location: 'Kilimani, Nairobi',
-    eta: 'Within 30 mins',
-  }
-
   return (
     <>
       <section className="hero-panel">
@@ -198,8 +172,7 @@ function HomePage({
           <p className="eyebrow accent">Verified workers, secure payments</p>
           <h2>Find trusted help nearby without the guesswork.</h2>
           <p className="muted-text">
-            Book plumbers, electricians, carpenters, and repair pros with escrow protection
-            built in for every job.
+            Book plumbers, electricians, carpenters, and repair pros with escrow protection built in for every job.
           </p>
 
           <div className="action-row">
@@ -232,10 +205,10 @@ function HomePage({
             <span className="status-dot" />
             <span>Open service request</span>
           </div>
-          <h3>{recentJob.title}</h3>
+          <h3>Emergency plumbing help</h3>
           <div className="job-meta">
-            <span>{recentJob.location}</span>
-            <span>{recentJob.eta}</span>
+            <span>Kilimani, Nairobi</span>
+            <span>Within 30 mins</span>
           </div>
           <div className="job-box">
             <p>Estimated budget</p>
@@ -353,12 +326,12 @@ function HomePage({
 
 function LoginPage({ onLogin }: { onLogin: (payload: LoginRequest) => Promise<UserSession> }) {
   const navigate = useNavigate()
-  const [role, setRole] = useState<'customer' | 'fundi' | 'admin'>('customer')
+  const [role, setRole] = useState<UserSession['role']>('customer')
   const [email, setEmail] = useState('customer@fundiconnect.co.ke')
   const [password, setPassword] = useState('password123')
   const [error, setError] = useState('')
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError('')
 
@@ -438,8 +411,18 @@ function LoginPage({ onLogin }: { onLogin: (payload: LoginRequest) => Promise<Us
 
 function DashboardPage({ session }: { session: UserSession }) {
   const stats = {
-    jobs: session.role === 'fundi' ? '18 open jobs' : '7 active bookings',
-    payouts: session.role === 'fundi' ? 'KES 118,450' : 'KES 26,300',
+    jobs:
+      session.role === 'fundi'
+        ? '18 open jobs'
+        : session.role === 'admin'
+          ? '1,240 platform jobs'
+          : '7 active bookings',
+    payouts:
+      session.role === 'fundi'
+        ? 'KES 118,450'
+        : session.role === 'admin'
+          ? 'KES 4.86M GMV'
+          : 'KES 26,300',
     score: session.role === 'admin' ? '98% trust score' : '4.9 service rating',
   }
 
@@ -449,7 +432,11 @@ function DashboardPage({ session }: { session: UserSession }) {
         <p className="eyebrow accent">{session.role.toUpperCase()} overview</p>
         <h2>Welcome back, {session.name.split(' ')[0]}.</h2>
         <p className="muted-text">
-          Keep your service quality high and stay on top of incoming work and payments.
+          {session.role === 'customer'
+            ? 'Track your bookings, confirm work, and keep your home services protected by escrow.'
+            : session.role === 'fundi'
+              ? 'Manage incoming requests, update job status, and keep your wallet moving on schedule.'
+              : 'Monitor platform quality, trust scores, and dispute resolution across the marketplace.'}
         </p>
       </section>
 
@@ -478,17 +465,25 @@ function DashboardPage({ session }: { session: UserSession }) {
           </li>
         </ul>
       </section>
+
+      {session.role === 'admin' ? <AdminPanel /> : null}
     </div>
   )
 }
 
 function BookingsPage({ session }: { session: UserSession }) {
   return (
-    <div className="panel-block">
+    <div className="panel-block booking-page">
       <div className="section-heading compact">
         <div>
           <p className="eyebrow">Bookings</p>
-          <h3>{session.role === 'fundi' ? 'Your job board' : 'Your appointments'}</h3>
+          <h3>
+            {session.role === 'fundi'
+              ? 'Your job board'
+              : session.role === 'admin'
+                ? 'Marketplace bookings'
+                : 'Your appointments'}
+          </h3>
         </div>
       </div>
 
@@ -514,12 +509,21 @@ function BookingsPage({ session }: { session: UserSession }) {
 }
 
 function WalletPage({ session }: { session: UserSession }) {
+  const balance =
+    session.role === 'fundi'
+      ? 'KES 156,200'
+      : session.role === 'admin'
+        ? 'KES 2.4M'
+        : 'KES 46,900'
+
   return (
     <div className="wallet-layout">
       <section className="summary-card hero-card">
-        <p className="eyebrow accent">{session.role === 'fundi' ? 'Earnings' : 'Balance'}</p>
-        <h2>KES 156,200</h2>
-        <p className="muted-text">Available to transfer or keep in escrow.</p>
+        <p className="eyebrow accent">
+          {session.role === 'fundi' ? 'Earnings' : session.role === 'admin' ? 'Platform treasury' : 'Balance'}
+        </p>
+        <h2>{balance}</h2>
+        <p className="muted-text">Available to approach or keep in escrow for active jobs.</p>
       </section>
 
       <section className="panel-block">
@@ -533,21 +537,67 @@ function WalletPage({ session }: { session: UserSession }) {
           <button className="secondary-button" type="button">
             <CreditCard size={16} /> View transactions
           </button>
+          <button className="secondary-button" type="button">
+            <ShieldCheck size={16} /> Escrow details
+          </button>
         </div>
       </section>
     </div>
   )
 }
 
-function StatCard({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode
-  label: string
-  value: string
-}) {
+function AdminPage({ session }: { session: UserSession }) {
+  if (session.role !== 'admin') {
+    return <Navigate to="/dashboard" replace />
+  }
+
+  return (
+    <div className="dashboard-grid">
+      <section className="summary-card hero-card wide-card">
+        <p className="eyebrow accent">Marketplace overview</p>
+        <h2>Admin control center</h2>
+        <p className="muted-text">
+          Monitor verification, disputes, and earning activity across the platform.
+        </p>
+      </section>
+
+      <div className="stat-grid">
+        <StatCard icon={<LayoutGrid size={18} />} label="GMV" value="KES 4.86M" />
+        <StatCard icon={<ShieldCheck size={18} />} label="Verified fundis" value="1,482" />
+        <StatCard icon={<MessageSquareText size={18} />} label="Open disputes" value="12" />
+      </div>
+
+      <AdminPanel />
+    </div>
+  )
+}
+
+function AdminPanel() {
+  return (
+    <section className="panel-block admin-panel">
+      <div className="section-heading compact">
+        <h3>Operational review</h3>
+      </div>
+
+      <ul className="activity-list">
+        <li>
+          <span>Fundi verification approvals</span>
+          <strong>24 pending</strong>
+        </li>
+        <li>
+          <span>Disputes awaiting resolution</span>
+          <strong>7 urgent</strong>
+        </li>
+        <li>
+          <span>Escrow release confirmations</span>
+          <strong>38 today</strong>
+        </li>
+      </ul>
+    </section>
+  )
+}
+
+function StatCard({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
     <div className="stat-card">
       <div className="stat-icon">{icon}</div>

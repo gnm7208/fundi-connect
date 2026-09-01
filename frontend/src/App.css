@@ -75,12 +75,6 @@
   color: white;
 }
 
-.topbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
 .user-pill {
   display: inline-flex;
   align-items: center;
