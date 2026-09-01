@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type Dispatch, type FormEvent, type ReactNode, type SetStateAction } from 'react'
 import {
   Briefcase,
   Building2,
@@ -15,7 +15,7 @@ import {
   Wallet,
 } from 'lucide-react'
 import { NavLink, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
-import { MOCK_BOOKINGS, type FundiProfile } from './data/mockData'
+import { MOCK_BOOKINGS, type Booking, type FundiProfile } from './data/mockData'
 import { fetchFundis, loginUser, type LoginRequest } from './lib/api'
 import './App.css'
 
@@ -24,6 +24,13 @@ type UserSession = {
   name: string
   email: string
   role: 'customer' | 'fundi' | 'admin'
+}
+
+type ServiceRequestForm = {
+  title: string
+  category: string
+  location: string
+  budget: string
 }
 
 const demoUsers: Record<UserSession['role'], UserSession> = {
@@ -51,6 +58,7 @@ function App() {
   const [session, setSession] = useState<UserSession | null>(null)
   const [fundis, setFundis] = useState<FundiProfile[]>([])
   const [loading, setLoading] = useState(true)
+  const [bookings, setBookings] = useState<Booking[]>(MOCK_BOOKINGS)
 
   useEffect(() => {
     let ignore = false
@@ -84,6 +92,10 @@ function App() {
 
   const handleLogout = () => {
     setSession(null)
+  }
+
+  const handleCreateBooking = (nextBooking: Booking) => {
+    setBookings((current) => [nextBooking, ...current])
   }
 
   return (
@@ -126,10 +138,18 @@ function App() {
 
       <main className="page-content">
         <Routes>
-          <Route path="/" element={<HomePage fundis={fundis} loading={loading} session={session} />} />
+          <Route
+            path="/"
+            element={<HomePage fundis={fundis} loading={loading} session={session} onCreateBooking={handleCreateBooking} />}
+          />
           <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
           <Route path="/dashboard" element={session ? <DashboardPage session={session} /> : <Navigate to="/login" replace />} />
-          <Route path="/bookings" element={session ? <BookingsPage session={session} /> : <Navigate to="/login" replace />} />
+          <Route
+            path="/bookings"
+            element={
+              session ? <BookingsPage session={session} bookings={bookings} onUpdateBooking={setBookings} /> : <Navigate to="/login" replace />
+            }
+          />
           <Route path="/wallet" element={session ? <WalletPage session={session} /> : <Navigate to="/login" replace />} />
           <Route path="/admin" element={session?.role === 'admin' ? <AdminPage session={session} /> : <Navigate to="/dashboard" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
@@ -143,12 +163,23 @@ function HomePage({
   fundis,
   loading,
   session,
+  onCreateBooking,
 }: {
   fundis: FundiProfile[]
   loading: boolean
   session: UserSession | null
+  onCreateBooking: (booking: Booking) => void
 }) {
+  const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
+  const [requestOpen, setRequestOpen] = useState(false)
+  const [selectedFundi, setSelectedFundi] = useState<FundiProfile | null>(null)
+  const [requestForm, setRequestForm] = useState<ServiceRequestForm>({
+    title: 'Bathroom pipe leak repair',
+    category: 'Plumbing',
+    location: 'Kilimani, Nairobi',
+    budget: '6500',
+  })
 
   const filteredFundis = useMemo(() => {
     const query = searchTerm.trim().toLowerCase()
@@ -165,8 +196,186 @@ function HomePage({
     )
   }, [fundis, searchTerm])
 
+  const handleCreateRequest = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    if (!session) {
+      navigate('/login')
+      return
+    }
+
+    const title = requestForm.title.trim() || `${requestForm.category} service request`
+    const budget = Number(requestForm.budget || 0)
+
+    const nextBooking: Booking = {
+      id: Date.now(),
+      title,
+      customer: session.name,
+      date: 'Today, 9:00 AM',
+      status: 'Requested',
+      amount: `KES ${budget.toLocaleString()}`,
+      fundi: 'Pending assignment',
+    }
+
+    onCreateBooking(nextBooking)
+    setRequestOpen(false)
+    navigate('/bookings')
+  }
+
+  const handleBookNow = (fundi: FundiProfile) => {
+    if (!session) {
+      navigate('/login')
+      return
+    }
+
+    const nextBooking: Booking = {
+      id: Date.now(),
+      title: `${fundi.skill} service`,
+      customer: session.name,
+      date: 'Today, 2:00 PM',
+      status: 'Requested',
+      amount: `KES ${(fundi.hourlyRate * 2).toLocaleString()}`,
+      fundi: fundi.name,
+    }
+
+    onCreateBooking(nextBooking)
+    navigate('/bookings')
+  }
+
+  const handleBrowseCategories = () => {
+    setSearchTerm('plumbing')
+    document.getElementById('fundi-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  const handleViewMatchingFundis = () => {
+    document.getElementById('fundi-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   return (
     <>
+      {requestOpen ? (
+        <div className="modal-backdrop" onClick={() => setRequestOpen(false)}>
+          <div className="modal-card" onClick={(event) => event.stopPropagation()}>
+            <div className="section-heading compact">
+              <div>
+                <p className="eyebrow">Create request</p>
+                <h3>Post a service request</h3>
+              </div>
+              <button className="ghost-button" type="button" onClick={() => setRequestOpen(false)}>
+                Close
+              </button>
+            </div>
+
+            <form className="request-form" onSubmit={handleCreateRequest}>
+              <div className="modal-grid">
+                <div className="field-group full">
+                  <label htmlFor="request-title">Job title</label>
+                  <input
+                    id="request-title"
+                    value={requestForm.title}
+                    onChange={(event) => setRequestForm((current) => ({ ...current, title: event.target.value }))}
+                  />
+                </div>
+
+                <div className="field-group">
+                  <label htmlFor="request-category">Category</label>
+                  <select
+                    id="request-category"
+                    value={requestForm.category}
+                    onChange={(event) => setRequestForm((current) => ({ ...current, category: event.target.value }))}
+                  >
+                    <option value="Plumbing">Plumbing</option>
+                    <option value="Electrical">Electrical</option>
+                    <option value="Carpentry">Carpentry</option>
+                    <option value="Appliance Repair">Appliance Repair</option>
+                  </select>
+                </div>
+
+                <div className="field-group">
+                  <label htmlFor="request-budget">Budget (KES)</label>
+                  <input
+                    id="request-budget"
+                    type="number"
+                    value={requestForm.budget}
+                    onChange={(event) => setRequestForm((current) => ({ ...current, budget: event.target.value }))}
+                  />
+                </div>
+
+                <div className="field-group full">
+                  <label htmlFor="request-location">Location</label>
+                  <input
+                    id="request-location"
+                    value={requestForm.location}
+                    onChange={(event) => setRequestForm((current) => ({ ...current, location: event.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <button className="secondary-button" type="button" onClick={() => setRequestOpen(false)}>
+                  Cancel
+                </button>
+                <button className="primary-button" type="submit">
+                  Submit request
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
+      {selectedFundi ? (
+        <div className="modal-backdrop" onClick={() => setSelectedFundi(null)}>
+          <div className="modal-card" onClick={(event) => event.stopPropagation()}>
+            <div className="section-heading compact">
+              <div>
+                <p className="eyebrow">Profile</p>
+                <h3>{selectedFundi.name}</h3>
+              </div>
+              <button className="ghost-button" type="button" onClick={() => setSelectedFundi(null)}>
+                Close
+              </button>
+            </div>
+
+            <div className="profile-body">
+              <p className="muted-text">{selectedFundi.businessName}</p>
+              <div className="meta-grid">
+                <span>
+                  <Building2 size={14} /> {selectedFundi.estate}
+                </span>
+                <span>
+                  <Briefcase size={14} /> {selectedFundi.skill}
+                </span>
+              </div>
+              <p className="bio-copy">{selectedFundi.bio}</p>
+              <div className="profile-stats">
+                <div>
+                  <strong>{selectedFundi.rating.toFixed(1)}</strong>
+                  <span>rating</span>
+                </div>
+                <div>
+                  <strong>{selectedFundi.jobsCompleted}</strong>
+                  <span>jobs</span>
+                </div>
+                <div>
+                  <strong>KES {selectedFundi.hourlyRate.toLocaleString()}</strong>
+                  <span>/hour</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <button className="secondary-button" type="button" onClick={() => setSelectedFundi(null)}>
+                Back
+              </button>
+              <button className="primary-button" type="button" onClick={() => handleBookNow(selectedFundi)}>
+                Book this fundi
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <section className="hero-panel">
         <div className="hero-copy">
           <p className="eyebrow accent">Verified workers, secure payments</p>
@@ -176,10 +385,10 @@ function HomePage({
           </p>
 
           <div className="action-row">
-            <button className="primary-button" type="button">
+            <button className="primary-button" type="button" onClick={() => setRequestOpen(true)}>
               Post a service request
             </button>
-            <button className="secondary-button" type="button">
+            <button className="secondary-button" type="button" onClick={handleBrowseCategories}>
               Browse categories
             </button>
           </div>
@@ -214,7 +423,7 @@ function HomePage({
             <p>Estimated budget</p>
             <strong>KES 6,500</strong>
           </div>
-          <button className="primary-button full-width" type="button">
+          <button className="primary-button full-width" type="button" onClick={handleViewMatchingFundis}>
             View matching fundis
           </button>
         </div>
@@ -232,7 +441,7 @@ function HomePage({
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
           />
-          <button className="primary-button" type="button">
+          <button className="primary-button" type="button" onClick={handleViewMatchingFundis}>
             Search
           </button>
         </div>
@@ -243,12 +452,12 @@ function HomePage({
           <p className="eyebrow">Recommended near you</p>
           <h3>Top-rated fundis</h3>
         </div>
-        <button className="secondary-button" type="button">
+        <button className="secondary-button" type="button" onClick={() => setSearchTerm('')}>
           View all
         </button>
       </section>
 
-      <section className="card-grid">
+      <section id="fundi-list" className="card-grid">
         {loading ? (
           <div className="empty-state">Loading trusted fundis...</div>
         ) : filteredFundis.length === 0 ? (
@@ -299,20 +508,10 @@ function HomePage({
               </div>
 
               <div className="card-actions">
-                <button className="secondary-button" type="button">
+                <button className="secondary-button" type="button" onClick={() => setSelectedFundi(fundi)}>
                   View profile
                 </button>
-                <button
-                  className="primary-button"
-                  type="button"
-                  onClick={() => {
-                    if (!session) {
-                      window.location.href = '/login'
-                      return
-                    }
-                    window.alert(`Booking request sent to ${fundi.name}.`)
-                  }}
-                >
+                <button className="primary-button" type="button" onClick={() => handleBookNow(fundi)}>
                   Book now
                 </button>
               </div>
@@ -368,19 +567,11 @@ function LoginPage({ onLogin }: { onLogin: (payload: LoginRequest) => Promise<Us
         <form className="auth-form" onSubmit={handleSubmit}>
           <label>
             Email address
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-            />
+            <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
           </label>
           <label>
             Password
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
+            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
           </label>
 
           {error ? <p className="error-text">{error}</p> : null}
@@ -471,7 +662,34 @@ function DashboardPage({ session }: { session: UserSession }) {
   )
 }
 
-function BookingsPage({ session }: { session: UserSession }) {
+function BookingsPage({
+  session,
+  bookings,
+  onUpdateBooking,
+}: {
+  session: UserSession
+  bookings: Booking[]
+  onUpdateBooking: Dispatch<SetStateAction<Booking[]>>
+}) {
+  const handleAdvanceStatus = (bookingId: number) => {
+    onUpdateBooking((current) =>
+      current.map((booking) => {
+        if (booking.id !== bookingId) {
+          return booking
+        }
+
+        const nextStatus = {
+          Requested: 'Accepted',
+          Accepted: 'In progress',
+          'In progress': 'Completed',
+          Completed: 'Completed',
+        } as const
+
+        return { ...booking, status: nextStatus[booking.status] }
+      }),
+    )
+  }
+
   return (
     <div className="panel-block booking-page">
       <div className="section-heading compact">
@@ -488,7 +706,7 @@ function BookingsPage({ session }: { session: UserSession }) {
       </div>
 
       <div className="booking-list">
-        {MOCK_BOOKINGS.map((booking) => (
+        {bookings.map((booking) => (
           <article className="booking-item" key={booking.id}>
             <div>
               <div className="booking-tag">{booking.status}</div>
@@ -500,6 +718,13 @@ function BookingsPage({ session }: { session: UserSession }) {
             <div className="booking-side">
               <strong>{booking.amount}</strong>
               <span>{booking.fundi}</span>
+              {booking.status !== 'Completed' ? (
+                <button className="secondary-button small-button" type="button" onClick={() => handleAdvanceStatus(booking.id)}>
+                  Mark next step
+                </button>
+              ) : (
+                <span className="done-note">Completed</span>
+              )}
             </div>
           </article>
         ))}
@@ -556,9 +781,7 @@ function AdminPage({ session }: { session: UserSession }) {
       <section className="summary-card hero-card wide-card">
         <p className="eyebrow accent">Marketplace overview</p>
         <h2>Admin control center</h2>
-        <p className="muted-text">
-          Monitor verification, disputes, and earning activity across the platform.
-        </p>
+        <p className="muted-text">Monitor verification, disputes, and earning activity across the platform.</p>
       </section>
 
       <div className="stat-grid">
