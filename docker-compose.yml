@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: fundi_connect_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: fundi
+      POSTGRES_PASSWORD: fundipass
+      POSTGRES_DB: fundi_connect
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fundi -d fundi_connect"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

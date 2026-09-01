@@ -1,0 +1,41 @@
+# TODO — Fundi Connect Backend Build
+
+- [ ] Core configuration & extensions (`server/config.py`, `server/extensions.py`, `server/app.py`, `server/wsgi.py`)
+- [ ] Database models (`server/models/`)
+  - [ ] `user.py`
+  - [ ] `fundi_profile.py`
+  - [ ] `category.py`
+  - [ ] `service_request.py`
+  - [ ] `booking.py`
+  - [ ] `escrow.py`
+  - [ ] `review.py`
+  - [ ] `dispute.py`
+  - [ ] `wallet.py`
+  - [ ] `conversation.py`
+  - [ ] `notification.py`
+- [ ] Marshmallow schemas (`server/schemas/`)
+- [ ] Utils & RBAC (`server/utils/auth.py`, `server/utils/errors.py`, `server/utils/pagination.py`, `server/utils/formatters.py`)
+- [ ] Business services (`server/services/`)
+  - [ ] `auth_service.py`
+  - [ ] `daraja_service.py` (M-PESA STK Push & callback)
+  - [ ] `escrow_service.py` (Fund, release, refund, dispute)
+  - [ ] `geolocation_service.py` (Haversine & geo bounding)
+  - [ ] `booking_service.py`
+  - [ ] `wallet_service.py`
+  - [ ] `review_service.py`
+  - [ ] `notification_service.py`
+- [ ] REST API Route Blueprints (`server/routes/`)
+  - [ ] `auth.py`
+  - [ ] `fundis.py`
+  - [ ] `categories.py`
+  - [ ] `service_requests.py`
+  - [ ] `bookings.py`
+  - [ ] `payments.py`
+  - [ ] `escrow.py`
+  - [ ] `reviews.py`
+  - [ ] `disputes.py`
+  - [ ] `wallets.py`
+  - [ ] `conversations.py`
+  - [ ] `admin.py`
+- [ ] Database seed script (`server/seed.py`)
+- [ ] Test suite (`server/tests/`)

@@ -1,0 +1,117 @@
+"""Application configuration classes for Fundi Connect."""
+
+import os
+from datetime import timedelta
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+class Config:
+    """Base configuration with sensible defaults."""
+
+    SECRET_KEY = os.getenv(
+        "SECRET_KEY", "dev-fallback-secret-fundi-connect-2026-very-secure-key-32bytes"
+    )
+
+    # SQLAlchemy
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "sqlite:///fundi_connect_dev.db")
+    # Fix postgres:// URL prefix if provided (e.g. by Render/Neon)
+    if SQLALCHEMY_DATABASE_URI.startswith("postgres://"):
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgres://", "postgresql://", 1)
+
+    # JWT Settings
+    JWT_SECRET_KEY = os.getenv(
+        "JWT_SECRET_KEY", "dev-jwt-fallback-secret-2026-fundi-connect-marketplace-key"
+    )
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(
+        minutes=int(os.getenv("JWT_ACCESS_TOKEN_EXPIRES_MINUTES", "60"))
+    )
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(
+        days=int(os.getenv("JWT_REFRESH_TOKEN_EXPIRES_DAYS", "30"))
+    )
+    JWT_TOKEN_LOCATION = ["headers", "cookies"]
+    JWT_COOKIE_SECURE = False  # Set to True in production
+    JWT_COOKIE_HTTPONLY = True
+    JWT_COOKIE_SAMESITE = "Lax"
+    JWT_COOKIE_CSRF_PROTECT = False  # Keep simple for API/mobile usage
+
+    # CORS
+    CORS_ORIGINS = [
+        origin.strip()
+        for origin in os.getenv(
+            "CORS_ORIGINS",
+            "http://localhost:5173,http://localhost:3000,https://fundi-connect.vercel.app",
+        ).split(",")
+        if origin.strip()
+    ]
+
+    # Rate Limiting
+    RATELIMIT_DEFAULT = "100 per minute"
+    RATELIMIT_STORAGE_URI = "memory://"
+
+    # Platform Business Rules
+    PLATFORM_COMMISSION_PERCENT = float(os.getenv("PLATFORM_COMMISSION_PERCENT", "10.0"))  # 10%
+
+    # Daraja M-PESA
+    DARAJA_ENVIRONMENT = os.getenv("DARAJA_ENVIRONMENT", "sandbox")
+    DARAJA_CONSUMER_KEY = os.getenv("DARAJA_CONSUMER_KEY", "mock_consumer_key")
+    DARAJA_CONSUMER_SECRET = os.getenv("DARAJA_CONSUMER_SECRET", "mock_consumer_secret")
+    DARAJA_PASSKEY = os.getenv(
+        "DARAJA_PASSKEY",
+        "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919",
+    )
+    DARAJA_SHORTCODE = os.getenv("DARAJA_SHORTCODE", "174379")
+    DARAJA_CALLBACK_URL = os.getenv(
+        "DARAJA_CALLBACK_URL",
+        "https://fundi-api.onrender.com/api/v1/payments/daraja/callback",
+    )
+    DARAJA_SIMULATION_MODE = os.getenv("DARAJA_SIMULATION_MODE", "true").lower() in (
+        "true",
+        "1",
+        "yes",
+    )
+
+
+class DevelopmentConfig(Config):
+    """Development configuration."""
+
+    DEBUG = True
+
+
+class TestingConfig(Config):
+    """Testing configuration."""
+
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    JWT_COOKIE_SECURE = False
+    DARAJA_SIMULATION_MODE = True
+    RATELIMIT_ENABLED = False
+
+
+class ProductionConfig(Config):
+    """Production configuration."""
+
+    DEBUG = False
+    JWT_COOKIE_SECURE = True
+    JWT_COOKIE_SAMESITE = "Strict"
+
+    @classmethod
+    def validate(cls):
+        """Validate critical production environment variables."""
+        required = ["SECRET_KEY", "JWT_SECRET_KEY", "DATABASE_URL"]
+        missing = [var for var in required if not os.getenv(var)]
+        if missing:
+            raise ValueError(
+                f"Missing required production environment variables: {', '.join(missing)}"
+            )
+
+
+config_by_name = {
+    "development": DevelopmentConfig,
+    "testing": TestingConfig,
+    "production": ProductionConfig,
+    "default": DevelopmentConfig,
+}
