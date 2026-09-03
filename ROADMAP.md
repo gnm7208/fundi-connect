@@ -9,12 +9,18 @@
 - [x] Full REST API under `/api/v1/` with Marshmallow validation.
 - [x] Comprehensive pytest test suite & seed data for Kenyan market.
 
-## Sprint 2: Frontend & Mobile Shell
-- [ ] React 19 + Vite + Tailwind CSS frontend with TypeScript.
-- [ ] Fundi discovery map and estate search filters.
-- [ ] Fundi onboarding flow with national ID upload.
-- [ ] Booking timeline & live M-PESA STK push prompt.
-- [ ] Mobile responsiveness & PWA installability.
+## Sprint 2: Frontend & Mobile Shell (Current)
+- [x] React 19 + Vite + TypeScript frontend (hand-authored CSS design tokens rather than Tailwind).
+- [x] Fundi discovery with estate, category, rating and GPS-radius filters.
+- [x] Fundi onboarding: profile, skills, availability and national ID verification.
+- [x] Booking timeline & live M-PESA STK push prompt with status polling.
+- [x] Profile photos and account personalisation for every role.
+- [x] Admin console: metrics, verification queue, dispute arbitration.
+- [x] Mobile-first responsive layout.
+- [x] Frontend deployed to Vercel; CI green on main.
+- [ ] Backend deployed to Render (blueprint ready, awaiting credentials).
+- [ ] PWA installability and offline shell.
+- [ ] Frontend test suite (Vitest + Playwright).
 
 ## Sprint 3: Trust, Moderation & Communications
 - [ ] Verified Pro badge tiers and background check integration.
