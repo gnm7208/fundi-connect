@@ -1,0 +1,124 @@
+/* Design tokens. Every colour is defined here on :root and only re-pointed in the
+   dark block, so no component ever hardcodes a literal. */
+
+:root {
+  /* Brand: a deep, calm green — the colour Kenyan users already associate with
+     money moving safely. Amber is the jua kali accent, used sparingly. */
+  --brand-50: #eaf6f1;
+  --brand-100: #cbe9dc;
+  --brand-300: #6bbfa1;
+  --brand-500: #0f6b52;
+  --brand-600: #0c5842;
+  --brand-700: #094433;
+  --accent-100: #fdf0d5;
+  --accent-500: #d98324;
+  --accent-600: #b96a15;
+
+  --success-100: #d9f2e3;
+  --success-500: #17845a;
+  --warning-100: #fdefd2;
+  --warning-500: #b57612;
+  --danger-100: #fbe0dd;
+  --danger-500: #c0392b;
+  --info-100: #dbeafe;
+  --info-500: #2563eb;
+
+  /* Surfaces — warm-tinted neutrals rather than pure grey. */
+  --bg: #f7f6f3;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f1efea;
+  --border: #e3dfd7;
+  --border-strong: #cec9be;
+
+  --text: #1a1a17;
+  --text-muted: #6b6659;
+  --text-subtle: #8c8779;
+  --text-on-brand: #ffffff;
+
+  --focus-ring: color-mix(in srgb, var(--brand-500) 45%, transparent);
+
+  /* Type scale */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-numeric: ui-monospace, 'SF Mono', 'Roboto Mono', menlo, monospace;
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-lg: 1.0625rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 2rem;
+  --text-4xl: 2.75rem;
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-full: 999px;
+
+  --shadow-sm: 0 1px 2px rgb(26 26 23 / 0.06);
+  --shadow: 0 2px 8px -2px rgb(26 26 23 / 0.1), 0 1px 3px rgb(26 26 23 / 0.05);
+  --shadow-lg: 0 16px 40px -12px rgb(26 26 23 / 0.22);
+
+  /* Motion. The built-in CSS easings are too weak to read as intentional. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-press: 140ms;
+  --dur-fast: 180ms;
+  --dur-base: 220ms;
+  --dur-slow: 280ms;
+
+  --shell-max: 1160px;
+  --topbar-h: 60px;
+  --bottomnav-h: 60px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --brand-50: #0d2a22;
+    --brand-100: #123a2e;
+    --brand-300: #3f9c7d;
+    --brand-500: #35a67f;
+    --brand-600: #2b8e6c;
+    --brand-700: #227357;
+    --accent-100: #3a2a10;
+    --accent-500: #e6a34d;
+    --accent-600: #cf8c33;
+
+    --success-100: #10321f;
+    --success-500: #43b784;
+    --warning-100: #362a10;
+    --warning-500: #d8a13c;
+    --danger-100: #3a1c19;
+    --danger-500: #e4796a;
+    --info-100: #16243f;
+    --info-500: #6f9dfb;
+
+    --bg: #121211;
+    --surface: #1b1b19;
+    --surface-raised: #232320;
+    --surface-sunken: #161615;
+    --border: #302f2b;
+    --border-strong: #46443e;
+
+    --text: #f2f0eb;
+    --text-muted: #a8a396;
+    --text-subtle: #857f72;
+    --text-on-brand: #06170f;
+
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow: 0 2px 10px -2px rgb(0 0 0 / 0.5);
+    --shadow-lg: 0 18px 44px -12px rgb(0 0 0 / 0.66);
+  }
+}
