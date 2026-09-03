@@ -1,0 +1,55 @@
+# Render Blueprint — provisions the API and its PostgreSQL database in one go.
+# Import this repo at https://dashboard.render.com/blueprints and Render reads this file.
+
+databases:
+  - name: fundi-connect-db
+    databaseName: fundi_connect
+    user: fundi
+    plan: free
+
+services:
+  - type: web
+    name: fundi-connect-api
+    runtime: python
+    plan: free
+    region: frankfurt
+    buildCommand: pip install -r requirements.txt
+    # init-db is idempotent and stands in for Alembic migrations, which this project
+    # does not have yet; without it a fresh Postgres would have no tables.
+    startCommand: flask --app server.wsgi:app init-db && gunicorn server.wsgi:app --bind 0.0.0.0:$PORT --workers 2 --timeout 60
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      - key: FLASK_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: fundi-connect-db
+          property: connectionString
+      # Generated once by Render and then held constant; rotating these logs everyone out.
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      # Set this to the deployed Vercel URL, otherwise the browser blocks the API calls.
+      - key: CORS_ORIGINS
+        sync: false
+      - key: PLATFORM_COMMISSION_PERCENT
+        value: "10.0"
+      # Must be false in production — ProductionConfig.validate() refuses to boot
+      # otherwise, because simulated payments would fund escrow without real money.
+      - key: DARAJA_SIMULATION_MODE
+        value: "false"
+      - key: DARAJA_ENVIRONMENT
+        value: sandbox
+      - key: DARAJA_CONSUMER_KEY
+        sync: false
+      - key: DARAJA_CONSUMER_SECRET
+        sync: false
+      - key: DARAJA_PASSKEY
+        sync: false
+      - key: DARAJA_SHORTCODE
+        sync: false
+      - key: DARAJA_CALLBACK_URL
+        sync: false

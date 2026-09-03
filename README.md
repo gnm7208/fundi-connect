@@ -2,106 +2,190 @@
 
 > **Verified informal-services marketplace with M-PESA escrow** for Kenya and East Africa.
 
-Fundi Connect bridges the trust gap in Kenya's informal (*jua kali*) economy. It connects households and businesses with verified craftspeople (plumbers, electricians, phone/appliance repair techs, carpenters, masons, painters, mama fua, welders) backed by identity verification, geo-search, transparent ratings, and **automated M-PESA escrow protection**.
+Fundi Connect bridges the trust gap in Kenya's informal (*jua kali*) economy. It connects households and businesses with verified craftspeople — plumbers, electricians, phone and appliance repair techs, carpenters, masons, painters, mama fua, welders — backed by identity verification, geo-search, transparent ratings, and **automated M-PESA escrow protection**.
+
+The trust anchor is the escrow: a customer's money is locked with the platform, not handed to the fundi, and is only released when the customer confirms the job — or when an admin arbitrates a dispute.
 
 ---
 
-## Key Features
+## Live demo
 
-1. **Verified Fundi Profiles & Skills**: National ID / certification verification, skill catalogue, portfolio, service radius, and client reviews.
-2. **Geo-Location Search**: Find nearby technicians by estate (e.g. Kilimani, Westlands, Eastleigh, Roysambu, Karen) or GPS distance (Haversine formula).
-3. **Flexible Job Matching**: Direct bookings or competitive quotes on customer service requests.
-4. **M-PESA Escrow Trust Anchor**:
-   - Customer initiates payment via Safaricom Daraja STK Push.
-   - Funds are locked safely in escrow.
-   - Fundi delivers the service.
-   - Customer confirms completion -> Escrow releases earnings to Fundi wallet minus platform fee.
-5. **Fair Dispute Arbitration**: Structured dispute resolution with admin mediation and refund/release controls.
-6. **Fundi Earnings & Wallets**: Track completed jobs, commission ledger, and instant M-PESA B2C payout requests.
-7. **In-App Messaging**: Real-time communication between customers and fundis per service request or booking.
+| Surface | URL |
+|---|---|
+| **Web app** (Vercel) | _pending deploy — see [Deployment](#deployment)_ |
+| **API** (Render) | _pending deploy — see [Deployment](#deployment)_ |
+| **API health** | `<api-url>/api/health` |
+
+> The public demo runs with **simulated M-PESA payments** — the app says so in a banner, and `/api/health` reports `"payments": "simulated"`. No real money moves.
+
+### Demo accounts
+
+All seeded accounts use the password `fundi123`.
+
+| Role | Email |
+|---|---|
+| Customer | `sarah.kimani@gmail.com` |
+| Fundi (plumber) | `john.mwangi@fundi.co.ke` |
+| Fundi (electrician) | `otieno.sparks@fundi.co.ke` |
+| Admin | `admin@fundiconnect.co.ke` |
 
 ---
 
-## Tech Stack
+## Key features
 
-- **Framework**: Python 3.12, Flask 3.x (App Factory Pattern)
-- **Database & ORM**: PostgreSQL / SQLite, SQLAlchemy 2.0, Alembic
-- **Validation**: Marshmallow schemas at the API boundary
-- **Authentication**: Flask-JWT-Extended (`httpOnly` cookies + `Bearer` tokens) with RBAC (`customer`, `fundi`, `admin`)
-- **Payments**: Safaricom Daraja API (STK Push C2B, Payout B2C) + local sandbox simulator
-- **Security**: Flask-Talisman (CSP / security headers), Flask-Limiter (rate limits), Flask-CORS
-- **Testing**: Pytest suite with isolated test clients and fixtures
+1. **Verified fundi profiles** — national ID verification reviewed by an admin, skill catalogue, service radius, ratings, and profile photos.
+2. **Geo-location search** — find nearby technicians by estate (Kilimani, Westlands, Eastleigh, Roysambu, Karen) or GPS distance, with a SQL bounding-box prefilter refined by the Haversine formula.
+3. **Flexible job matching** — book a fundi directly, or post a job and compare competitive quotes.
+4. **M-PESA escrow** — STK Push locks the customer's funds; the fundi works knowing the money is there; the customer confirms and escrow releases to the fundi's wallet minus the platform fee.
+5. **Dispute arbitration** — either party can freeze an escrowed job; an admin decides refund or payout.
+6. **Fundi wallets** — commission ledger and instant M-PESA B2C payout requests.
+7. **In-app messaging and notifications** — per-booking conversations and a notification feed.
+
+---
+
+## Tech stack
+
+**Backend** — Python 3.12, Flask 3 (app factory), SQLAlchemy 2.0, Marshmallow validation at the API boundary, Flask-JWT-Extended (httpOnly cookies + Bearer tokens) with RBAC, Safaricom Daraja (STK Push C2B + B2C payouts) with a local simulator, Flask-Talisman, Flask-Limiter, pytest.
+
+**Frontend** — React 19, Vite, TypeScript (strict), TanStack Query for server state, React Router, hand-authored CSS design-token system with light/dark themes, `prefers-reduced-motion` support, and a mobile-first layout built for the Android hardware this market runs on.
+
+### Money representation
+
+All money is stored and calculated as **integer minor units** (KES cents). The platform commission is held as integer **basis points** so no float ever touches a monetary calculation, and the fundi is paid the exact remainder — fee + payout always reconstructs the amount the customer escrowed. Amounts are constrained to whole shillings at the API boundary, because M-PESA cannot move fractions of a shilling.
 
 ---
 
 ## Quickstart
 
-### 1. Prerequisites
-- Python 3.12+
-- Docker & Docker Compose (optional for local PostgreSQL)
-
-### 2. Setup
+### Backend
 
 ```bash
-# Clone and enter directory
-cd "Fundi Connect"
-
-# Copy environment variables
 cp .env.example .env
-
-# Create and activate virtual environment
-python3.12 -m venv venv
-source venv/bin/activate
-
-# Install dependencies
+python3.12 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-```
 
-### 3. Database & Seed Data
-
-```bash
-# Seed realistic Kenyan demo data (locations, fundis, requests, bookings, escrow)
-python server/seed.py
-```
-
-### 4. Run Server
-
-```bash
+python server/seed.py                              # realistic Kenyan demo data
 flask --app server.wsgi:app run --port 5050
 ```
 
-The API will be available at `http://localhost:5050`. Check health at:
-`http://localhost:5050/api/health`
+API at `http://localhost:5050`, health at `http://localhost:5050/api/health`.
 
----
-
-## API Overview (Mounted at `/api/v1`)
-
-| Domain | Routes | Description |
-|---|---|---|
-| **Auth** | `POST /auth/register`<br>`POST /auth/login`<br>`POST /auth/logout`<br>`GET /auth/me`<br>`PATCH /auth/me` | Register as customer or fundi, login, get current session profile |
-| **Categories** | `GET /categories`<br>`POST /categories`<br>`GET /categories/<slug>` | Browse skill categories and standard pricing guidance |
-| **Fundis** | `GET /fundis/search`<br>`GET /fundis/<id>`<br>`PATCH /fundis/profile`<br>`POST /fundis/verify-id` | Geo search by radius/skill, view profile, update services, submit ID |
-| **Service Requests** | `GET /service-requests`<br>`POST /service-requests`<br>`POST /service-requests/<id>/quotes`<br>`POST /service-requests/<id>/quotes/<qid>/accept` | Post RFQs, submit quotes, accept quotes |
-| **Bookings** | `GET /bookings`<br>`POST /bookings`<br>`GET /bookings/<id>`<br>`PATCH /bookings/<id>/status`<br>`POST /bookings/<id>/confirm` | Direct booking, accept/decline, start, complete, confirm |
-| **Payments & Escrow** | `POST /payments/stk-push`<br>`POST /payments/daraja/callback`<br>`GET /escrow/<booking_id>` | Initiate M-PESA escrow funding, webhook callbacks, escrow status |
-| **Reviews** | `POST /reviews`<br>`GET /fundis/<id>/reviews` | Submit verified review after escrow completion, list reviews |
-| **Disputes** | `POST /disputes`<br>`GET /disputes/<id>`<br>`POST /disputes/<id>/respond` | File dispute on escrowed booking, submit response |
-| **Wallets** | `GET /wallets/me`<br>`GET /wallets/me/transactions`<br>`POST /wallets/payout-request` | Fundi balance, commission ledger, M-PESA payout request |
-| **Conversations** | `GET /conversations`<br>`POST /conversations`<br>`POST /conversations/<id>/messages` | In-app messaging between customer and fundi |
-| **Admin** | `GET /admin/metrics`<br>`PATCH /admin/fundis/<id>/verify`<br>`POST /admin/disputes/<id>/resolve` | Platform GMV, fundi verification approval, dispute arbitration |
-
----
-
-## Testing & Quality
+### Frontend
 
 ```bash
-# Run all tests
-pytest server/tests/ -v
-
-# Run linter
-ruff check server/
+cd frontend
+cp .env.example .env
+npm install
+npm run dev
 ```
+
+App at `http://localhost:5173`. In development the Vite dev server proxies `/api` to the Flask API, keeping requests same-origin so the auth cookies work.
+
+### Optional: profile photo uploads
+
+Avatar uploads go direct to Cloudinary. Without configuration the app degrades gracefully to pasting an image link, so this is optional:
+
+```bash
+# frontend/.env
+VITE_CLOUDINARY_CLOUD_NAME=your_cloud
+VITE_CLOUDINARY_UPLOAD_PRESET=your_unsigned_preset
+```
+
+---
+
+## API overview (mounted at `/api/v1`)
+
+| Domain | Routes |
+|---|---|
+| **Auth** | `POST /auth/register` · `POST /auth/login` · `POST /auth/refresh` · `POST /auth/logout` · `GET/PATCH /auth/me` |
+| **Categories** | `GET /categories` · `GET /categories/<slug>` · `POST/PATCH` (admin) |
+| **Fundis** | `GET /fundis/search` · `GET /fundis/<id>` · `PATCH /fundis/profile` · `POST/DELETE /fundis/skills` · `POST /fundis/verify-id` |
+| **Service requests** | `GET/POST /service-requests` · `GET /service-requests/<id>` · `POST /service-requests/<id>/quotes` · `POST /service-requests/<id>/quotes/<qid>/accept` |
+| **Bookings** | `GET/POST /bookings` · `GET /bookings/<id>` · `PATCH /bookings/<id>/status` · `POST /bookings/<id>/confirm` |
+| **Payments & escrow** | `POST /payments/stk-push` · `POST /payments/daraja/callback` · `GET /payments/status/<id>` · `GET /escrow/booking/<id>` |
+| **Reviews** | `POST /reviews` · `GET /reviews/fundi/<id>` |
+| **Disputes** | `POST /disputes` · `GET /disputes/<id>` · `POST /disputes/<id>/respond` |
+| **Wallets** | `GET /wallets/me` · `GET /wallets/me/transactions` · `POST /wallets/payout-request` |
+| **Conversations** | `GET/POST /conversations` · `GET /conversations/<id>` · `POST /conversations/<id>/messages` |
+| **Notifications** | `GET /notifications` · `POST /notifications/<id>/read` · `POST /notifications/read-all` |
+| **Admin** | `GET /admin/metrics` · `GET /admin/fundis/pending-verification` · `PATCH /admin/fundis/<id>/verify` · `GET /admin/disputes` · `POST /admin/disputes/<id>/resolve` |
+
+### Escrow state machine
+
+```text
+booking:  pending → accepted_unpaid → escrow_funded → in_progress → awaiting_confirm → completed
+                                                   ↘ disputed ↗
+escrow:   pending → held_in_escrow → released (to fundi) | refunded (to customer)
+```
+
+---
+
+## Deployment
+
+The backend deploys to **Render** from `render.yaml` (a Blueprint that also provisions PostgreSQL), and the frontend to **Vercel** from `frontend/vercel.json`.
+
+### 1. Backend on Render
+
+1. Go to <https://dashboard.render.com/blueprints> → **New Blueprint Instance** → pick this repo.
+2. Render reads `render.yaml` and creates the web service plus a free PostgreSQL database. `SECRET_KEY` and `JWT_SECRET_KEY` are generated automatically.
+3. Fill in the variables marked `sync: false`:
+   - `CORS_ORIGINS` — your Vercel URL (e.g. `https://fundi-connect.vercel.app`). Without this the browser blocks every API call.
+   - `DARAJA_*` — your Safaricom Daraja sandbox credentials, if running live payments.
+4. For a **public demo** with simulated payments, also set `DARAJA_SIMULATION_MODE=true` and `ALLOW_SIMULATED_PAYMENTS=true`. Production config refuses to boot with simulated payments unless that second flag is set deliberately.
+5. Optionally seed demo data once from the Render shell: `python server/seed.py`.
+
+The start command runs `flask init-db` before Gunicorn, which creates any missing tables (this project has no Alembic migrations yet — see [Known gaps](#known-gaps)).
+
+### 2. Frontend on Vercel
+
+```bash
+cd frontend
+vercel --prod
+```
+
+Set one environment variable in the Vercel project:
+
+```bash
+VITE_API_BASE_URL=https://<your-render-service>.onrender.com/api/v1
+```
+
+Because the deployed frontend and API are on different origins, the app authenticates with Bearer tokens rather than cookies; this is handled automatically by the API client.
+
+---
+
+## Testing & quality
+
+```bash
+pytest server/tests -q       # 47 tests
+ruff check server/           # lint
+ruff format server/          # format
+
+cd frontend
+npm run lint                 # oxlint
+npx tsc -b                   # strict typecheck
+npm run build                # production build
+```
+
+CI runs all of the above on every push and pull request (`.github/workflows/ci.yml`), plus an advisory dependency audit.
+
+---
+
+## Security notes
+
+- **Rate limits** — register 3/min, login 5/min, STK push 10/min, payouts 5/min.
+- **Escrow integrity** — a short M-PESA payment never funds a job; the webhook amount is verified against the escrow record before funds are marked as held.
+- **Payment simulation** is authenticated, restricted to the paying customer, and disabled outside simulation mode.
+- **Production config validation** runs at boot: missing secrets, or simulated payments without an explicit demo opt-in, refuse to start.
+- **Passwords** are bcrypt-hashed; ID numbers and admin verification notes are never returned by public endpoints.
+- **CORS** is restricted to `CORS_ORIGINS`; security headers via Flask-Talisman.
+
+---
+
+## Known gaps
+
+- **No Alembic migrations.** Schema is created by `flask init-db`, which cannot alter existing tables. Adding migrations is the next infrastructure task.
+- **Rate-limit storage is in-memory**, so limits are per-process. Move to Redis before running multiple workers.
+- **No frontend test suite yet** — the backend has 47 tests; the client is covered by typecheck, lint and build only.
 
 ---
 
