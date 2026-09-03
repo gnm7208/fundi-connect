@@ -10,6 +10,7 @@ from server.routes.conversations import conversations_bp
 from server.routes.disputes import disputes_bp
 from server.routes.escrow import escrow_bp
 from server.routes.fundis import fundis_bp
+from server.routes.notifications import notifications_bp
 from server.routes.payments import payments_bp
 from server.routes.reviews import reviews_bp
 from server.routes.service_requests import service_requests_bp
@@ -31,6 +32,7 @@ def register_blueprints(app):
     api_v1_bp.register_blueprint(disputes_bp, url_prefix="/disputes")
     api_v1_bp.register_blueprint(wallets_bp, url_prefix="/wallets")
     api_v1_bp.register_blueprint(conversations_bp, url_prefix="/conversations")
+    api_v1_bp.register_blueprint(notifications_bp, url_prefix="/notifications")
     api_v1_bp.register_blueprint(admin_bp, url_prefix="/admin")
 
     app.register_blueprint(api_v1_bp)

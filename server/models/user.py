@@ -92,5 +92,7 @@ class User(db.Model):
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
         if include_profile and self.is_fundi() and self.fundi_profile:
-            data["fundi_profile"] = self.fundi_profile.to_dict()
+            # Only ever serialized for the account holder themselves, so the
+            # owner-only verification fields are safe to include here.
+            data["fundi_profile"] = self.fundi_profile.to_dict(include_private=True)
         return data

@@ -1,6 +1,6 @@
 """M-PESA Daraja payment and webhook callback routes."""
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 
 from server.extensions import db, limiter
 from server.models.booking import Booking
@@ -9,7 +9,7 @@ from server.schemas.payment import SimulatePaymentCallbackSchema, STKPushInitiat
 from server.services.daraja_service import DarajaService
 from server.services.escrow_service import EscrowService
 from server.utils.auth import customer_required, get_current_authenticated_user, login_required
-from server.utils.errors import ForbiddenError, NotFoundError, ValidationError
+from server.utils.errors import EscrowError, ForbiddenError, NotFoundError, ValidationError
 
 payments_bp = Blueprint("payments", __name__)
 
@@ -95,16 +95,27 @@ def daraja_callback():
         # Successful payment
         items = stk_callback.get("CallbackMetadata", {}).get("Item", [])
         mpesa_receipt = None
+        paid_cents = None
         for item in items:
             name = item.get("Name")
             if name == "MpesaReceiptNumber":
                 mpesa_receipt = item.get("Value")
+            elif name == "Amount" and item.get("Value") is not None:
+                # Daraja reports the amount in whole shillings.
+                paid_cents = int(round(float(item["Value"]) * 100))
 
         receipt_str = str(mpesa_receipt or f"REC-{checkout_request_id[:8]}")
-        EscrowService.process_successful_payment(
-            checkout_request_id=checkout_request_id,
-            mpesa_receipt_number=receipt_str,
-        )
+        try:
+            EscrowService.process_successful_payment(
+                checkout_request_id=checkout_request_id,
+                mpesa_receipt_number=receipt_str,
+                amount_cents=paid_cents,
+            )
+        except EscrowError as exc:
+            # Acknowledge so Safaricom stops retrying, but leave the escrow unfunded.
+            current_app.logger.warning("Rejected M-PESA callback: %s", exc.message)
+            return jsonify({"ResultCode": 0, "ResultDesc": exc.message}), 200
+
         return jsonify({"ResultCode": 0, "ResultDesc": "Accepted and escrow funded"}), 200
     else:
         # User cancelled or payment failed
@@ -118,8 +129,18 @@ def daraja_callback():
 
 
 @payments_bp.route("/simulate-callback", methods=["POST"])
+@customer_required
+@limiter.limit("10 per minute")
 def simulate_callback():
-    """Simulate successful M-PESA payment callback (for sandbox/testing/demo)."""
+    """Simulate a successful M-PESA payment callback (sandbox/demo only).
+
+    This marks funds as collected without any money moving, so it is restricted to
+    simulation mode and to the customer who owns the booking being funded.
+    """
+    if not current_app.config.get("DARAJA_SIMULATION_MODE"):
+        raise ForbiddenError("Payment simulation is disabled when Daraja is live")
+
+    customer = get_current_authenticated_user()
     schema = SimulatePaymentCallbackSchema()
     errors = schema.validate(request.get_json() or {})
     if errors:
@@ -128,6 +149,12 @@ def simulate_callback():
     data = schema.load(request.get_json() or {})
     checkout_id = data["checkout_request_id"]
     receipt = data.get("mpesa_receipt_number") or f"NLJ{checkout_id[-8:].upper()}"
+
+    pending = EscrowTransaction.query.filter_by(checkout_request_id=checkout_id).first()
+    if not pending:
+        raise NotFoundError("Transaction not found")
+    if pending.customer_id != customer.id and not customer.is_admin():
+        raise ForbiddenError("Only the paying customer can confirm this transaction")
 
     escrow = EscrowService.process_successful_payment(
         checkout_request_id=checkout_id,

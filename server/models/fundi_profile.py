@@ -73,7 +73,12 @@ class FundiProfile(db.Model):
     def is_verified(self) -> bool:
         return self.verification_status == "verified"
 
-    def to_dict(self, include_skills: bool = True) -> dict:
+    def to_dict(self, include_skills: bool = True, include_private: bool = False) -> dict:
+        """Serialize the profile.
+
+        `include_private` adds the owner-only verification fields; it must stay off
+        for public search and profile responses so admin notes are not exposed.
+        """
         data = {
             "id": self.id,
             "user_id": self.user_id,
@@ -96,6 +101,10 @@ class FundiProfile(db.Model):
         }
         if include_skills:
             data["skills"] = [skill.to_dict() for skill in self.skills]
+        if include_private:
+            data["verification_notes"] = self.verification_notes
+            data["id_number"] = self.id_number
+            data["id_document_url"] = self.id_document_url
         return data
 
 

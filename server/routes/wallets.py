@@ -2,6 +2,7 @@
 
 from flask import Blueprint, jsonify, request
 
+from server.extensions import limiter
 from server.models.wallet import WalletTransaction
 from server.schemas.wallet import PayoutRequestSchema
 from server.services.wallet_service import WalletService
@@ -48,6 +49,7 @@ def get_my_wallet_transactions():
 
 @wallets_bp.route("/payout-request", methods=["POST"])
 @fundi_required
+@limiter.limit("5 per minute")
 def request_payout():
     """Request M-PESA B2C withdrawal of earned wallet balance."""
     user = get_current_authenticated_user()

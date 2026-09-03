@@ -53,7 +53,10 @@ class Config:
     RATELIMIT_STORAGE_URI = "memory://"
 
     # Platform Business Rules
-    PLATFORM_COMMISSION_PERCENT = float(os.getenv("PLATFORM_COMMISSION_PERCENT", "10.0"))  # 10%
+    # Held as integer basis points so no commission calculation ever touches a float.
+    PLATFORM_COMMISSION_BPS = int(
+        round(float(os.getenv("PLATFORM_COMMISSION_PERCENT", "10.0")) * 100)
+    )
 
     # Daraja M-PESA
     DARAJA_ENVIRONMENT = os.getenv("DARAJA_ENVIRONMENT", "sandbox")
@@ -69,6 +72,14 @@ class Config:
         "https://fundi-api.onrender.com/api/v1/payments/daraja/callback",
     )
     DARAJA_SIMULATION_MODE = os.getenv("DARAJA_SIMULATION_MODE", "true").lower() in (
+        "true",
+        "1",
+        "yes",
+    )
+    # Escape hatch for a public demo deployment: lets simulated payments run under
+    # FLASK_ENV=production, where they are otherwise refused. Never set this on an
+    # instance handling real customer money — it makes escrow fundable for free.
+    ALLOW_SIMULATED_PAYMENTS = os.getenv("ALLOW_SIMULATED_PAYMENTS", "false").lower() in (
         "true",
         "1",
         "yes",
@@ -106,6 +117,13 @@ class ProductionConfig(Config):
         if missing:
             raise ValueError(
                 f"Missing required production environment variables: {', '.join(missing)}"
+            )
+
+        if cls.DARAJA_SIMULATION_MODE and not cls.ALLOW_SIMULATED_PAYMENTS:
+            raise ValueError(
+                "DARAJA_SIMULATION_MODE must be disabled in production: simulated "
+                "payments would let customers fund escrow without paying. Set "
+                "ALLOW_SIMULATED_PAYMENTS=true only for a demo instance holding no real money."
             )
 
 

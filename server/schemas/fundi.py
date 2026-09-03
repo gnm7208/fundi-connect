@@ -40,3 +40,6 @@ class FundiSearchQuerySchema(Schema):
         load_default="rating",
         validate=validate.OneOf(["rating", "distance", "jobs", "rate_asc", "rate_desc"]),
     )
+    # Declared so the schema accepts them; the values are read by get_pagination_params.
+    page = fields.Integer(required=False, validate=validate.Range(min=1))
+    per_page = fields.Integer(required=False, validate=validate.Range(min=1, max=100))

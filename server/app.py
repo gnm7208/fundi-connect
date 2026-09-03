@@ -20,6 +20,15 @@ def create_app(config_name: str | None = None) -> Flask:
     config_class = config_by_name.get(config_name, config_by_name["default"])
     app.config.from_object(config_class)
 
+    if hasattr(config_class, "validate"):
+        config_class.validate()
+
+    if app.config.get("DARAJA_SIMULATION_MODE") and app.config.get("ALLOW_SIMULATED_PAYMENTS"):
+        app.logger.warning(
+            "Running with SIMULATED M-PESA payments in a production environment. "
+            "Escrow can be funded without any money moving. Demo instances only."
+        )
+
     # Initialize Extensions
     db.init_app(app)
     jwt.init_app(app)
@@ -66,10 +75,22 @@ def create_app(config_name: str | None = None) -> Flask:
                     "version": "0.1.0",
                     "database": db_status,
                     "environment": config_name,
+                    # Stated plainly so a demo instance never looks like it moves real money.
+                    "payments": "simulated" if app.config.get("DARAJA_SIMULATION_MODE") else "live",
                 }
             ),
             200 if "unhealthy" not in db_status else 503,
         )
+
+    @app.cli.command("init-db")
+    def init_db_command():
+        """Create any missing tables.
+
+        Stands in for Alembic until migrations exist: it is idempotent, so it is safe
+        to run on every deploy, but it will not alter columns on an existing table.
+        """
+        db.create_all()
+        print("Database tables are up to date.")
 
     # Automatically create tables in SQLite development/testing modes
     with app.app_context():

@@ -2,6 +2,7 @@
 
 from flask import Blueprint, jsonify, request
 from sqlalchemy import or_
+from sqlalchemy.orm import joinedload, selectinload
 
 from server.extensions import db
 from server.models.category import Category
@@ -15,6 +16,7 @@ from server.schemas.fundi import (
     FundiVerificationSchema,
 )
 from server.services.geolocation_service import (
+    bounding_box,
     calculate_haversine_distance,
 )
 from server.utils.auth import (
@@ -22,6 +24,7 @@ from server.utils.auth import (
     get_current_authenticated_user,
 )
 from server.utils.errors import NotFoundError, ValidationError
+from server.utils.pagination import get_pagination_params
 
 fundis_bp = Blueprint("fundis", __name__)
 
@@ -35,7 +38,16 @@ def search_fundis():
         raise ValidationError("Invalid search parameters", payload={"fields": errors})
 
     params = schema.load(request.args.to_dict())
-    query = FundiProfile.query.join(User).filter(User.is_active.is_(True))
+    page, per_page = get_pagination_params()
+
+    query = (
+        FundiProfile.query.join(User)
+        .filter(User.is_active.is_(True))
+        .options(
+            joinedload(FundiProfile.user),
+            selectinload(FundiProfile.skills).joinedload(FundiSkill.category),
+        )
+    )
 
     # Category filter
     if params.get("category"):
@@ -66,12 +78,23 @@ def search_fundis():
             )
         )
 
-    profiles = query.all()
-    results = []
-
     user_lat = params.get("lat")
     user_lng = params.get("lng")
     radius_km = params.get("radius_km", 25.0)
+
+    # Cheap SQL prefilter; Haversine below still decides the exact radius.
+    if user_lat is not None and user_lng is not None:
+        min_lat, max_lat, min_lng, max_lng = bounding_box(user_lat, user_lng, radius_km)
+        query = query.filter(
+            or_(
+                FundiProfile.latitude.is_(None),
+                (FundiProfile.latitude.between(min_lat, max_lat))
+                & (FundiProfile.longitude.between(min_lng, max_lng)),
+            )
+        )
+
+    profiles = query.distinct().all()
+    results = []
 
     for profile in profiles:
         data = profile.to_dict(include_skills=True)
@@ -104,7 +127,28 @@ def search_fundis():
     elif sort_by == "rate_desc":
         results.sort(key=lambda x: x["hourly_rate_cents"] or 0, reverse=True)
 
-    return jsonify({"fundis": results, "count": len(results)}), 200
+    # Radius filtering and sorting happen in Python, so the page is sliced last.
+    total = len(results)
+    total_pages = (total + per_page - 1) // per_page if per_page else 1
+    window = results[(page - 1) * per_page : page * per_page]
+
+    return (
+        jsonify(
+            {
+                "fundis": window,
+                "count": total,
+                "pagination": {
+                    "page": page,
+                    "per_page": per_page,
+                    "total_items": total,
+                    "total_pages": total_pages,
+                    "has_next": page < total_pages,
+                    "has_prev": page > 1,
+                },
+            }
+        ),
+        200,
+    )
 
 
 @fundis_bp.route("/<string:fundi_id>", methods=["GET"])

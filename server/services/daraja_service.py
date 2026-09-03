@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 import requests
 from flask import current_app
 
-from server.utils.formatters import normalize_phone_number
+from server.utils.formatters import normalize_phone_number, to_whole_shillings
 
 
 class DarajaService:
@@ -61,7 +61,7 @@ class DarajaService:
         Daraja accepts whole Kenyan shillings.
         """
         normalized_phone = normalize_phone_number(phone_number)
-        amount_kes = max(1, amount_cents // 100)
+        amount_kes = to_whole_shillings(amount_cents)
 
         # If simulation mode is active (for dev/test or mock demo):
         if self.simulation_mode:
@@ -121,7 +121,7 @@ class DarajaService:
     ) -> dict:
         """Send earnings payout from business to Fundi M-PESA phone number."""
         normalized_phone = normalize_phone_number(phone_number)
-        amount_kes = max(1, amount_cents // 100)
+        amount_kes = to_whole_shillings(amount_cents)
 
         if self.simulation_mode:
             receipt = (

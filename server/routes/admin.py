@@ -78,7 +78,8 @@ def get_pending_verifications():
     pending = FundiProfile.query.filter_by(verification_status="pending").all()
     results = []
     for p in pending:
-        d = p.to_dict(include_skills=True)
+        # Admins are reviewing the ID itself, so they get the private fields.
+        d = p.to_dict(include_skills=True, include_private=True)
         d["user_name"] = p.user.full_name if p.user else None
         d["email"] = p.user.email if p.user else None
         d["phone"] = p.user.phone if p.user else None

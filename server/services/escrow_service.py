@@ -24,13 +24,13 @@ class EscrowService:
     def calculate_breakdown(agreed_amount_cents: int) -> tuple[int, int]:
         """Calculate platform commission and fundi payout amount.
 
-        Platform fee is e.g. 10% of agreed amount.
-        Fundi payout is 90%.
-        Strict integer arithmetic.
+        Commission is configured in integer basis points (1000 bps = 10%) so the
+        whole calculation stays in integers; the fundi is paid the exact remainder,
+        which guarantees fee + payout == the amount the customer escrowed.
         """
-        commission_percent = current_app.config.get("PLATFORM_COMMISSION_PERCENT", 10.0)
-        # integer math: round to nearest cent
-        platform_fee_cents = int(round(agreed_amount_cents * (commission_percent / 100.0)))
+        commission_bps = current_app.config.get("PLATFORM_COMMISSION_BPS", 1000)
+        # Half-up rounding on integers: the +5000 biases the floor division.
+        platform_fee_cents = (agreed_amount_cents * commission_bps + 5000) // 10000
         fundi_payout_cents = agreed_amount_cents - platform_fee_cents
         return platform_fee_cents, fundi_payout_cents
 
@@ -90,6 +90,16 @@ class EscrowService:
 
         if escrow.status == "held_in_escrow":
             return escrow  # idempotent
+
+        # A short payment must never unlock the job: the fundi would be promised a
+        # payout larger than the funds actually collected.
+        if amount_cents is not None and amount_cents < escrow.amount_cents:
+            escrow.status = "failed"
+            db.session.commit()
+            raise EscrowError(
+                f"M-PESA collected {amount_cents} cents but the booking requires "
+                f"{escrow.amount_cents} cents. Escrow not funded."
+            )
 
         escrow.status = "held_in_escrow"
         escrow.mpesa_receipt_number = mpesa_receipt_number

@@ -2,6 +2,8 @@
 
 from marshmallow import Schema, fields, validate
 
+from server.schemas.validators import whole_shillings
+
 
 class ServiceRequestCreateSchema(Schema):
     category_id = fields.String(required=True)
@@ -16,6 +18,8 @@ class ServiceRequestCreateSchema(Schema):
 
 
 class QuoteCreateSchema(Schema):
-    amount_cents = fields.Integer(required=True, validate=validate.Range(min=100))  # min KES 1.00
+    amount_cents = fields.Integer(
+        required=True, validate=[validate.Range(min=100), whole_shillings]
+    )  # min KES 1.00
     estimated_hours = fields.Float(required=False, allow_none=True)
     notes = fields.String(required=False, allow_none=True)

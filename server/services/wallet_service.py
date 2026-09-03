@@ -27,6 +27,10 @@ class WalletService:
             raise ForbiddenError("Only service providers can withdraw wallet earnings")
 
         wallet = cls.get_user_wallet(user)
+        # Lock the row for the balance check and debit, so two concurrent payout
+        # requests cannot both pass the balance check and overdraw the wallet.
+        wallet = db.session.query(Wallet).filter_by(id=wallet.id).with_for_update().one()
+
         if wallet.is_frozen:
             raise ForbiddenError("Wallet is currently frozen. Please contact support.")
 

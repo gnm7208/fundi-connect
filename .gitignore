@@ -61,3 +61,15 @@ htmlcov/
 *.swo
 *~
 *.log
+
+# Local SQLite databases (never commit real or seeded user data)
+instance/
+*.db
+*.sqlite3
+
+# Node
+node_modules/
+frontend/dist/
+
+# Scratch
+shots/

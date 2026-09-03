@@ -2,10 +2,12 @@
 
 from marshmallow import Schema, fields, validate
 
+from server.schemas.validators import whole_shillings
+
 
 class PayoutRequestSchema(Schema):
     amount_cents = fields.Integer(
-        required=True, validate=validate.Range(min=10000)
+        required=True, validate=[validate.Range(min=10000), whole_shillings]
     )  # min KES 100 withdrawal
     phone_number = fields.String(required=True)
 

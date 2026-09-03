@@ -28,6 +28,18 @@ def calculate_haversine_distance(lat1: float, lon1: float, lat2: float, lon2: fl
     return round(r * c, 2)
 
 
+def bounding_box(lat: float, lng: float, radius_km: float) -> tuple[float, float, float, float]:
+    """Return (min_lat, max_lat, min_lng, max_lng) enclosing a radius around a point.
+
+    Lets the database discard far-away rows before Haversine refines the result in
+    Python, instead of loading every profile on the platform for each search.
+    """
+    lat_delta = radius_km / 111.0
+    # Degrees of longitude shrink towards the poles; guard the equator-adjacent cos.
+    lng_delta = radius_km / max(1.0, 111.0 * math.cos(math.radians(lat)))
+    return (lat - lat_delta, lat + lat_delta, lng - lng_delta, lng + lng_delta)
+
+
 def is_within_radius(
     origin_lat: float, origin_lng: float, target_lat: float, target_lng: float, radius_km: float
 ) -> bool:
