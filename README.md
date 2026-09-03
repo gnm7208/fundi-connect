@@ -134,7 +134,7 @@ The backend deploys to **Render** from `render.yaml` (a Blueprint that also prov
    - `CORS_ORIGINS` — your Vercel URL — `https://fundi-connect-pi.vercel.app`. Without this the browser blocks every API call.
    - `DARAJA_*` — your Safaricom Daraja sandbox credentials, if running live payments.
 4. For a **public demo** with simulated payments, also set `DARAJA_SIMULATION_MODE=true` and `ALLOW_SIMULATED_PAYMENTS=true`. Production config refuses to boot with simulated payments unless that second flag is set deliberately.
-5. Optionally seed demo data once from the Render shell: `python server/seed.py`.
+5. Demo data seeds itself on first boot — the start command runs `flask seed-demo`, which only populates an empty database (free plans have no shell to run a script from).
 
 The start command runs `flask init-db` before Gunicorn, which creates any missing tables (this project has no Alembic migrations yet — see [Known gaps](#known-gaps)).
 

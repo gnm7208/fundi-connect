@@ -92,6 +92,22 @@ def create_app(config_name: str | None = None) -> Flask:
         db.create_all()
         print("Database tables are up to date.")
 
+    @app.cli.command("seed-demo")
+    def seed_demo_command():
+        """Populate an empty database with demo data.
+
+        Refuses to touch a database that already has users, so it is safe to leave
+        in a hosted start command where free-tier plans offer no shell access.
+        """
+        from server.models.user import User
+        from server.seed import seed_database
+
+        if db.session.query(User.id).first() is not None:
+            print("Database already has users — skipping demo seed.")
+            return
+
+        seed_database(app=app, reset=False)
+
     # Automatically create tables in SQLite development/testing modes
     with app.app_context():
         if app.config.get("TESTING") or "sqlite" in app.config.get("SQLALCHEMY_DATABASE_URI", ""):

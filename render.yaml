@@ -15,8 +15,9 @@ services:
     region: frankfurt
     buildCommand: pip install -r requirements.txt
     # init-db is idempotent and stands in for Alembic migrations, which this project
-    # does not have yet; without it a fresh Postgres would have no tables.
-    startCommand: flask --app server.wsgi:app init-db && gunicorn server.wsgi:app --bind 0.0.0.0:$PORT --workers 2 --timeout 60
+    # does not have yet; without it a fresh Postgres would have no tables. seed-demo
+    # only populates an empty database, and free plans have no shell to run it from.
+    startCommand: flask --app server.wsgi:app init-db && flask --app server.wsgi:app seed-demo && gunicorn server.wsgi:app --bind 0.0.0.0:$PORT --workers 2 --timeout 60
     healthCheckPath: /api/health
     envVars:
       - key: PYTHON_VERSION

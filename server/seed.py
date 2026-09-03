@@ -25,12 +25,18 @@ def utc_now():
     return datetime.now(UTC)
 
 
-def seed_database():
-    app = create_app("development")
+def seed_database(app=None, reset=True):
+    """Populate the database with demo data.
+
+    `reset` drops every table first — right for a local reseed, wrong for a hosted
+    demo, where `flask seed-demo` calls this with reset=False on an empty database.
+    """
+    app = app or create_app(os.getenv("FLASK_ENV", "development"))
 
     with app.app_context():
         print("🌱 Seeding Fundi Connect database...")
-        db.drop_all()
+        if reset:
+            db.drop_all()
         db.create_all()
 
         # 1. Categories
