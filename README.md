@@ -131,7 +131,7 @@ The backend deploys to **Render** from `render.yaml` (a Blueprint that also prov
 1. Go to <https://dashboard.render.com/blueprints> → **New Blueprint Instance** → pick this repo.
 2. Render reads `render.yaml` and creates the web service plus a free PostgreSQL database. `SECRET_KEY` and `JWT_SECRET_KEY` are generated automatically.
 3. Fill in the variables marked `sync: false`:
-   - `CORS_ORIGINS` — your Vercel URL (e.g. `https://fundi-connect.vercel.app`). Without this the browser blocks every API call.
+   - `CORS_ORIGINS` — your Vercel URL — `https://fundi-connect-pi.vercel.app`. Without this the browser blocks every API call.
    - `DARAJA_*` — your Safaricom Daraja sandbox credentials, if running live payments.
 4. For a **public demo** with simulated payments, also set `DARAJA_SIMULATION_MODE=true` and `ALLOW_SIMULATED_PAYMENTS=true`. Production config refuses to boot with simulated payments unless that second flag is set deliberately.
 5. Optionally seed demo data once from the Render shell: `python server/seed.py`.
