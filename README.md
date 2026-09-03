@@ -10,13 +10,15 @@ The trust anchor is the escrow: a customer's money is locked with the platform, 
 
 ## Live demo
 
-| Surface | URL |
-|---|---|
-| **Web app** (Vercel) | _pending deploy — see [Deployment](#deployment)_ |
-| **API** (Render) | _pending deploy — see [Deployment](#deployment)_ |
-| **API health** | `<api-url>/api/health` |
+| Surface | URL | Status |
+|---|---|---|
+| **Web app** (Vercel) | <https://fundi-connect-pi.vercel.app> | Live |
+| **API** (Render) | _not deployed yet — see [Deployment](#deployment)_ | Pending |
+| **Repository** | <https://github.com/gnm7208/fundi-connect> | Public |
 
-> The public demo runs with **simulated M-PESA payments** — the app says so in a banner, and `/api/health` reports `"payments": "simulated"`. No real money moves.
+> **The web app is deployed but not yet usable end to end**: it needs the Render API before sign-in, search or payments work. Deploy the backend, then set `VITE_API_BASE_URL` in the Vercel project to the Render URL.
+>
+> The public demo is intended to run with **simulated M-PESA payments** — the app says so in a banner, and `/api/health` reports `"payments": "simulated"`. No real money moves.
 
 ### Demo accounts
 
