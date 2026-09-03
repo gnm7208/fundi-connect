@@ -18,7 +18,7 @@
 - [x] Admin console: metrics, verification queue, dispute arbitration.
 - [x] Mobile-first responsive layout.
 - [x] Frontend deployed to Vercel; CI green on main.
-- [ ] Backend deployed to Render (blueprint ready, awaiting credentials).
+- [x] Backend deployed to Render with a Neon PostgreSQL database.
 - [ ] PWA installability and offline shell.
 - [ ] Frontend test suite (Vitest + Playwright).
 

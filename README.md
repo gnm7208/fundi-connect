@@ -13,12 +13,13 @@ The trust anchor is the escrow: a customer's money is locked with the platform, 
 | Surface | URL | Status |
 |---|---|---|
 | **Web app** (Vercel) | <https://fundi-connect-pi.vercel.app> | Live |
-| **API** (Render) | _not deployed yet — see [Deployment](#deployment)_ | Pending |
+| **API** (Render) | <https://fundi-connect-api.onrender.com> | Live |
+| **API health** | <https://fundi-connect-api.onrender.com/api/health> | Live |
 | **Repository** | <https://github.com/gnm7208/fundi-connect> | Public |
 
-> **The web app is deployed but not yet usable end to end**: it needs the Render API before sign-in, search or payments work. Deploy the backend, then set `VITE_API_BASE_URL` in the Vercel project to the Render URL.
+> **First load can take ~50 seconds.** The API runs on Render's free tier, which sleeps after 15 minutes idle; the next request wakes it. Once awake it is fast.
 >
-> The public demo is intended to run with **simulated M-PESA payments** — the app says so in a banner, and `/api/health` reports `"payments": "simulated"`. No real money moves.
+> The public demo runs with **simulated M-PESA payments** — the app says so in a banner, and `/api/health` reports `"payments": "simulated"`. No real money moves.
 
 ### Demo accounts
 
@@ -133,6 +134,12 @@ The backend deploys to **Render** from `render.yaml` (a Blueprint that also prov
 3. Fill in the variables marked `sync: false`:
    - `CORS_ORIGINS` — your Vercel URL — `https://fundi-connect-pi.vercel.app`. Without this the browser blocks every API call.
    - `DARAJA_*` — your Safaricom Daraja sandbox credentials, if running live payments.
+
+   The live deployment uses an external **Neon** PostgreSQL instance rather than the
+   blueprint's database, because Render allows only one free database per account.
+   To do the same, create a Neon project and set `DATABASE_URL` to its pooled
+   connection string; Neon's free tier does not expire after 30 days the way
+   Render's does.
 4. For a **public demo** with simulated payments, also set `DARAJA_SIMULATION_MODE=true` and `ALLOW_SIMULATED_PAYMENTS=true`. Production config refuses to boot with simulated payments unless that second flag is set deliberately.
 5. Demo data seeds itself on first boot — the start command runs `flask seed-demo`, which only populates an empty database (free plans have no shell to run a script from).
 

@@ -16,8 +16,8 @@
 | 2026-09-03 | Admin console | Completed | Metrics, fundi verification queue, dispute arbitration |
 | 2026-09-03 | CI + Dependabot | Completed | Backend lint/tests, frontend lint/typecheck/build, advisory audit. Green on main |
 | 2026-09-03 | Frontend deploy (Vercel) | Completed | <https://fundi-connect-pi.vercel.app> |
-| 2026-09-03 | Backend deploy (Render) | **Blocked** | `render.yaml` blueprint ready; needs a Render API key or a dashboard Blueprint import |
-| — | Point Vercel at the API | Pending | Set `VITE_API_BASE_URL` once the Render URL exists |
+| 2026-09-03 | Backend deploy (Render) | Completed | <https://fundi-connect-api.onrender.com> — Neon Postgres (eu-central-1), demo data seeded on first boot |
+| 2026-09-03 | End-to-end verification on production | Completed | Login → search → booking → STK push → escrow funded, driven through the live site on a phone viewport |
 | — | Alembic migrations | Pending | `flask init-db` is the interim; cannot alter existing tables |
 | — | Frontend test suite | Pending | Currently covered by typecheck, lint and build only |
 
