@@ -116,7 +116,7 @@ VITE_CLOUDINARY_UPLOAD_PRESET=your_unsigned_preset
 
 | Domain | Routes |
 |---|---|
-| **Auth** | `POST /auth/register` · `POST /auth/login` · `POST /auth/refresh` · `POST /auth/logout` · `GET/PATCH /auth/me` |
+| **Auth** | `POST /auth/register` · `POST /auth/login` · `POST /auth/refresh` · `POST /auth/logout` · `GET/PATCH/DELETE /auth/me` (DELETE re-checks the password and is refused while jobs, escrow or wallet funds are in flight) |
 | **Categories** | `GET /categories` · `GET /categories/<slug>` · `POST/PATCH` (admin) |
 | **Fundis** | `GET /fundis/search` · `GET /fundis/<id>` · `PATCH /fundis/profile` · `POST/DELETE /fundis/skills` · `POST /fundis/verify-id` |
 | **Service requests** | `GET/POST /service-requests` · `GET /service-requests/<id>` · `POST /service-requests/<id>/quotes` · `POST /service-requests/<id>/quotes/<qid>/accept` |

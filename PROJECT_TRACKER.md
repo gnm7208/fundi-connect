@@ -49,3 +49,17 @@ Android signing key in `~/.android-signing/fundiconnect.keystore`; Bubblewrap TW
 
 Next: deploy, GitHub Release with the APK, Microsoft Store via PWABuilder, in-app account
 deletion, and real (non-simulated) Daraja credentials before any paid store traffic.
+
+## Sprint summary — 2026-09-19 (later)
+
+Store prerequisites shipped: in-app account deletion (`DELETE /api/v1/auth/me`) with a
+password re-check (403, not 401, so the client does not mistake it for an expired session),
+refused with a 409 while the user has an active booking, money held in escrow or a wallet
+balance, and otherwise erasing conversations, quotes, requests, finished bookings (escrow,
+review and dispute rows cascade), profile, wallet and notifications explicitly — SQLite does
+not enforce ON DELETE CASCADE, so the service does not rely on it. Settings page gains the
+Delete-my-account section. PWA work committed; keep-alive workflow added; GitHub Release
+v1.0.0-android published.
+
+Still open from today: every Vercel deploy since 10 Sept fails (dependabot previews included),
+so the live site is an older build — the build log needs reading in the Vercel dashboard.

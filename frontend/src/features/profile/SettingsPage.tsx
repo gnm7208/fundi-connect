@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
-import { LogOut, Mail, Phone, ShieldCheck } from 'lucide-react'
+import { LogOut, Mail, Phone, ShieldCheck, Trash2 } from 'lucide-react'
 
 import { Alert, Badge, Button, Input } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
@@ -10,12 +10,34 @@ import { api, ApiError } from '@/lib/api'
 import { formatDate, isValidKenyanPhone } from '@/lib/format'
 
 export function SettingsPage() {
-  const { user, refreshUser, logout } = useAuth()
+  const { user, refreshUser, logout, deleteAccount } = useAuth()
   const { notify } = useToast()
   const navigate = useNavigate()
 
   const [phone, setPhone] = useState(user?.phone ?? '')
   const [error, setError] = useState<string | null>(null)
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleteArmed, setDeleteArmed] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  const removeAccount = useMutation({
+    mutationFn: () => deleteAccount(deletePassword),
+    onSuccess: () => {
+      notify('Your account has been deleted', 'success')
+      navigate('/', { replace: true })
+    },
+    onError: (mutationError) => {
+      setDeleteArmed(false)
+      if (mutationError instanceof ApiError && mutationError.status === 403) {
+        setDeleteError('That password is not right.')
+      } else if (mutationError instanceof ApiError) {
+        // 409s explain exactly what is still in flight (active job, escrow, wallet balance).
+        setDeleteError(mutationError.message)
+      } else {
+        setDeleteError('Could not delete your account. Check your connection and try again.')
+      }
+    },
+  })
 
   const savePhone = useMutation({
     mutationFn: () => api.auth.updateProfile({ phone: phone.trim() }),
@@ -118,6 +140,59 @@ export function SettingsPage() {
         >
           <LogOut size={15} /> Log out
         </Button>
+      </section>
+
+      <section className="card stack" aria-labelledby="delete-account-heading">
+        <h2 id="delete-account-heading" style={{ fontSize: 'var(--text-base)' }}>
+          Delete my account
+        </h2>
+        <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+          Permanently removes your login, profile, messages, requests and finished job history.
+          It is refused while you have an active job, money held in escrow or a wallet balance —
+          finish or cancel those first. This cannot be undone.
+        </p>
+        {deleteError && <Alert tone="danger">{deleteError}</Alert>}
+        <form
+          className="stack"
+          onSubmit={(event) => {
+            event.preventDefault()
+            setDeleteError(null)
+            if (!deleteArmed) {
+              // First submit only arms the button, so one stray tap cannot erase an account.
+              setDeleteArmed(true)
+              return
+            }
+            removeAccount.mutate()
+          }}
+        >
+          <Input
+            label="Confirm with your password"
+            type="password"
+            autoComplete="current-password"
+            value={deletePassword}
+            onChange={(event) => {
+              setDeletePassword(event.target.value)
+              setDeleteArmed(false)
+            }}
+            required
+          />
+          <div className="row">
+            <Button
+              type="submit"
+              variant="danger"
+              style={{ width: 'fit-content' }}
+              loading={removeAccount.isPending}
+              disabled={!deletePassword}
+            >
+              <Trash2 size={15} /> {deleteArmed ? 'Yes, delete my account' : 'Delete my account'}
+            </Button>
+            {deleteArmed && !removeAccount.isPending && (
+              <Button type="button" variant="ghost" onClick={() => setDeleteArmed(false)}>
+                Cancel
+              </Button>
+            )}
+          </div>
+        </form>
       </section>
     </div>
   )

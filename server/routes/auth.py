@@ -108,6 +108,19 @@ def get_me():
     return jsonify({"user": user.to_dict()}), 200
 
 
+@auth_bp.route("/me", methods=["DELETE"])
+@login_required
+@limiter.limit("5 per minute")
+def delete_me():
+    """Delete the current user's account (password re-checked; nothing may be in flight)."""
+    user = get_current_authenticated_user()
+    data = request.get_json(silent=True) or {}
+    AuthService.delete_account(user, data.get("password") or "")
+    response = jsonify({"message": "Account deleted"})
+    unset_jwt_cookies(response)
+    return response, 200
+
+
 @auth_bp.route("/me", methods=["PATCH"])
 @login_required
 def update_me():

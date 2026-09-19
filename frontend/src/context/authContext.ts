@@ -10,6 +10,7 @@ export interface AuthValue {
   login: (emailOrPhone: string, password: string) => Promise<User>
   register: (payload: RegisterPayload) => Promise<User>
   logout: () => Promise<void>
+  deleteAccount: (password: string) => Promise<void>
   refreshUser: () => Promise<void>
   setUser: (user: User) => void
 }

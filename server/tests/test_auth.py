@@ -93,3 +93,70 @@ def test_get_me_authenticated_vs_unauthenticated(app, client, sample_customer):
     res_auth = client.get("/api/v1/auth/me", headers=headers)
     assert res_auth.status_code == 200
     assert res_auth.get_json()["user"]["email"] == sample_customer.email
+
+
+def _booking(db, customer, fundi, status):
+    from server.models.booking import Booking
+
+    booking = Booking(
+        customer_id=customer.id,
+        fundi_id=fundi.id,
+        title="Kitchen tap",
+        agreed_amount_cents=150000,
+        location_name="Kilimani",
+        status=status,
+    )
+    db.session.add(booking)
+    db.session.commit()
+    return booking
+
+
+def test_delete_account_rejects_wrong_password_with_403(app, client, sample_customer):
+    """403, not 401 — the client treats a 401 as an expired session and signs out."""
+    headers = auth_header_for(app, sample_customer)
+    res = client.delete("/api/v1/auth/me", json={"password": "nope"}, headers=headers)
+    assert res.status_code == 403
+    assert client.get("/api/v1/auth/me", headers=headers).status_code == 200
+
+
+def test_delete_account_refuses_while_a_job_is_active(
+    app, client, db, sample_customer, sample_fundi
+):
+    _booking(db, sample_customer, sample_fundi, status="escrow_funded")
+    headers = auth_header_for(app, sample_customer)
+    res = client.delete("/api/v1/auth/me", json={"password": "password123"}, headers=headers)
+    assert res.status_code == 409
+    assert "active jobs" in res.get_json()["error"].lower()
+
+
+def test_delete_account_refuses_while_wallet_holds_money(app, client, db, sample_fundi):
+    sample_fundi.wallet.balance_cents = 5000
+    db.session.commit()
+    headers = auth_header_for(app, sample_fundi)
+    res = client.delete("/api/v1/auth/me", json={"password": "password123"}, headers=headers)
+    assert res.status_code == 409
+    assert "wallet" in res.get_json()["error"].lower()
+
+
+def test_delete_account_erases_user_and_finished_history(
+    app, client, db, sample_customer, sample_fundi
+):
+    from server.models.booking import Booking
+    from server.models.user import User
+
+    booking = _booking(db, sample_customer, sample_fundi, status="completed")
+    booking_id, customer_id, email = booking.id, sample_customer.id, sample_customer.email
+    headers = auth_header_for(app, sample_customer)
+
+    res = client.delete("/api/v1/auth/me", json={"password": "password123"}, headers=headers)
+    assert res.status_code == 200
+
+    assert db.session.get(User, customer_id) is None
+    assert db.session.get(Booking, booking_id) is None
+    # The fundi on the other side of that job is untouched.
+    assert db.session.get(User, sample_fundi.id) is not None
+    # And the email is free again.
+    login = client.post(
+        "/api/v1/auth/login", json={"email_or_phone": email, "password": "password123"}
+    )
+    assert login.status_code == 401

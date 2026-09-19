@@ -38,4 +38,6 @@
 - [x] PWA layer, brand icons, assetlinks, privacy policy, Android TWA project
 - [ ] Deploy → GitHub Release (APK) → Microsoft Store (PWABuilder) → Amazon / Samsung
 - [ ] Google Play after the $25 registration (closed test: 12 testers, 14 days)
-- [ ] In-app account deletion; switch from simulated to live Daraja; API keep-alive
+- [x] In-app account deletion (`DELETE /api/v1/auth/me`, refused while jobs/escrow/wallet are in flight)
+- [x] API keep-alive (`.github/workflows/keepalive.yml`)
+- [ ] Switch from simulated to live Daraja (needs a Paybill/Till + go-live approval)

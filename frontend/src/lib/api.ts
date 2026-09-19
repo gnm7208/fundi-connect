@@ -225,6 +225,12 @@ export const api = {
       const data = await request<{ user: User }>('/auth/me', { method: 'PATCH', body: payload })
       return data.user
     },
+    /** Erases the account; the server refuses (409) while jobs or money are in flight. */
+    async deleteAccount(password: string) {
+      await request('/auth/me', { method: 'DELETE', body: { password } })
+      // Only once the server has actually deleted the account.
+      tokenStore.clear()
+    },
   },
 
   categories: {
