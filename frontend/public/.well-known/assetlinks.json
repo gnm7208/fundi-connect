@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.gnm7208.fundiconnect",
+      "sha256_cert_fingerprints": ["A9:A2:95:E1:79:B9:B1:BD:6D:C7:37:79:E8:94:87:5D:A7:35:05:A9:62:9B:24:74:0B:31:69:CA:49:2B:50:00"]
+    }
+  }
+]

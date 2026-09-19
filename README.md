@@ -34,6 +34,21 @@ All seeded accounts use the password `fundi123`.
 
 ---
 
+## Install as an app
+
+Fundi Connect is a Progressive Web App. The web build in `frontend/` is also what ships to the app stores — there is no separate mobile codebase.
+
+| Platform | How |
+|---|---|
+| **Android / desktop Chrome** | Open <https://fundi-connect-pi.vercel.app> → browser menu → **Install app** (or **Add to Home screen**). |
+| **Android APK** | Download the latest signed APK from [GitHub Releases](https://github.com/gnm7208/fundi-connect/releases) and open it (allow "install from this source" once). |
+| **Microsoft Store** | Listed as **Fundi Connect** (packaged from the PWA with PWABuilder). |
+| **Google Play / Amazon / Samsung** | Same Android package (`com.gnm7208.fundiconnect`); listings go live per store — check Releases for status. |
+
+Privacy policy: <https://fundi-connect-pi.vercel.app/privacy.html> (also linked from every store listing; deletion requests are handled by email as described there).
+
+**How it works.** `frontend/public/manifest.webmanifest` declares the app (name, colours, PNG + maskable icons), `frontend/public/sw.js` caches the app shell so it opens with no signal (API responses are deliberately never cached), and `frontend/src/lib/register-sw.ts` registers the worker in production builds only. `frontend/public/.well-known/assetlinks.json` links the site to the Android signing key so the Android app opens full-screen without browser chrome; the Android project itself lives outside this repo in `../store-packaging/` (Bubblewrap TWA) and the signing key in `~/.android-signing/` — never commit either.
+
 ## Key features
 
 1. **Verified fundi profiles** — national ID verification reviewed by an admin, skill catalogue, service radius, ratings, and profile photos.
@@ -43,6 +58,7 @@ All seeded accounts use the password `fundi123`.
 5. **Dispute arbitration** — either party can freeze an escrowed job; an admin decides refund or payout.
 6. **Fundi wallets** — commission ledger and instant M-PESA B2C payout requests.
 7. **In-app messaging and notifications** — per-booking conversations and a notification feed.
+8. **Installable app** — a PWA with an offline app shell, packaged for Android (TWA) and the Microsoft Store from the same build; see [Install as an app](#install-as-an-app).
 
 ---
 

@@ -39,3 +39,9 @@
   - [ ] `admin.py`
 - [ ] Database seed script (`server/seed.py`)
 - [ ] Test suite (`server/tests/`)
+
+## App stores
+- [ ] Push and verify `https://fundi-connect-pi.vercel.app/.well-known/assetlinks.json`
+- [ ] GitHub Release v1.0.0 with signed APK
+- [ ] PWABuilder → Microsoft Store submission
+- [ ] In-app account deletion

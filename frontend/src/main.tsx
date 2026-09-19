@@ -8,6 +8,7 @@ import { AuthProvider } from '@/context/AuthContext'
 import { ToastProvider } from '@/context/ToastContext'
 import { ApiError } from '@/lib/api'
 import './index.css'
+import { registerServiceWorker } from '@/lib/register-sw'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,3 +37,5 @@ createRoot(document.getElementById('root')!).render(
     </QueryClientProvider>
   </StrictMode>,
 )
+
+registerServiceWorker()

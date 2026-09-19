@@ -33,3 +33,19 @@ release → review journey through the browser on a phone viewport.
 
 Published the repo, deployed the web app, and set up CI — which immediately earned
 its keep by catching that `.gitignore` had been silently excluding `frontend/src/lib`.
+
+## Sprint summary — 2026-09-19 (store packaging)
+
+Made Fundi Connect installable and packaged it for distribution without paying any store fee.
+New brand mark (verified shield, amber tick on brand green) replaces the placeholder favicon;
+added the PNG/maskable icon set, `manifest.webmanifest`, an app-shell service worker
+(`/api/*` never cached), production-only registration in `frontend/src/lib/register-sw.ts`,
+Apple/mobile meta tags, `/.well-known/assetlinks.json` and `/privacy.html` (which discloses the
+ID-number verification data honestly).
+
+Android signing key in `~/.android-signing/fundiconnect.keystore`; Bubblewrap TWA project in
+`../store-packaging/fundiconnect` (`com.gnm7208.fundiconnect`); listing copy in
+`../store-packaging/listings/fundiconnect.md`.
+
+Next: deploy, GitHub Release with the APK, Microsoft Store via PWABuilder, in-app account
+deletion, and real (non-simulated) Daraja credentials before any paid store traffic.

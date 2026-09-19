@@ -32,3 +32,10 @@
 - [ ] Micro-insurance per job (cover accidental damages up to KES 50,000).
 - [ ] Creditworthiness scoring integration for SACCO loans based on verified escrow job history.
 - [ ] Expansion to Mombasa, Kisumu, Nakuru, and Eldoret.
+
+## Sprint 5: Distribution ($0 path)
+
+- [x] PWA layer, brand icons, assetlinks, privacy policy, Android TWA project
+- [ ] Deploy → GitHub Release (APK) → Microsoft Store (PWABuilder) → Amazon / Samsung
+- [ ] Google Play after the $25 registration (closed test: 12 testers, 14 days)
+- [ ] In-app account deletion; switch from simulated to live Daraja; API keep-alive
