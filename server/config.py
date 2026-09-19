@@ -43,7 +43,7 @@ class Config:
         origin.strip()
         for origin in os.getenv(
             "CORS_ORIGINS",
-            "http://localhost:5173,http://localhost:3000,https://fundi-connect.vercel.app",
+            "http://localhost:5173,http://localhost:3000,https://fundi-connect-pi.vercel.app",
         ).split(",")
         if origin.strip()
     ]
@@ -69,7 +69,7 @@ class Config:
     DARAJA_SHORTCODE = os.getenv("DARAJA_SHORTCODE", "174379")
     DARAJA_CALLBACK_URL = os.getenv(
         "DARAJA_CALLBACK_URL",
-        "https://fundi-api.onrender.com/api/v1/payments/daraja/callback",
+        "https://fundi-connect-api.onrender.com/api/v1/payments/daraja/callback",
     )
     DARAJA_SIMULATION_MODE = os.getenv("DARAJA_SIMULATION_MODE", "true").lower() in (
         "true",
