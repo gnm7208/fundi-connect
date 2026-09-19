@@ -141,7 +141,7 @@ escrow:   pending → held_in_escrow → released (to fundi) | refunded (to cust
 
 ## Deployment
 
-The backend deploys to **Render** from `render.yaml` (a Blueprint that also provisions PostgreSQL), and the frontend to **Vercel** from `frontend/vercel.json`.
+The backend deploys to **Render** from `render.yaml` (a Blueprint that also provisions PostgreSQL), and the frontend to **Vercel**. The Vercel project's Root Directory is the repository root, so the root `vercel.json` drives the build (`cd frontend && npm ci && npm run build`, output `frontend/dist`); `frontend/vercel.json` is kept for a project rooted at `frontend/`.
 
 ### 1. Backend on Render
 
